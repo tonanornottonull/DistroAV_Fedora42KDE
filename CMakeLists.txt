@@ -1,5 +1,10 @@
 cmake_minimum_required(VERSION 3.28...3.30)
 
+# MUST come early to enable Qt file generation
+set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTOUIC ON)
+set(CMAKE_AUTORCC ON)
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/cmake/common/bootstrap.cmake" NO_POLICY_SCOPE)
 
 project(${_name} VERSION ${_version})
@@ -25,30 +30,34 @@ if(ENABLE_FRONTEND_API)
 endif()
 
 if(ENABLE_QT)
-  find_package(Qt6 COMPONENTS Widgets Core Network)
-  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt6::Core Qt6::Widgets Qt6::Network)
-  target_compile_options(
-    ${CMAKE_PROJECT_NAME}
-    PRIVATE $<$<C_COMPILER_ID:Clang,AppleClang>:-Wno-quoted-include-in-framework-header -Wno-comma>
-  )
-  set_target_properties(
-    ${CMAKE_PROJECT_NAME}
-    PROPERTIES AUTOMOC ON AUTOUIC ON AUTORCC ON
-  )
+  # Use Qt5 instead of Qt6
+  find_package(Qt5 REQUIRED COMPONENTS Core Widgets Network)
+
+  # Let CMake know where to find the generated UI headers
+  set(CMAKE_AUTOUIC_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/uic)
+  include_directories(${CMAKE_AUTOUIC_OUTPUT_DIRECTORY})
+
+  target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE Qt5::Core Qt5::Widgets Qt5::Network)
 endif()
 
 target_sources(
   ${CMAKE_PROJECT_NAME}
   PRIVATE
+    # Ensure .ui files are listed for uic to run
+    src/forms/output-settings.ui
+    src/forms/update.ui
+
     src/forms/output-settings.cpp
     src/forms/output-settings.h
     src/forms/update.cpp
     src/forms/update.h
+
     src/obs-support/obs-app.hpp
     src/obs-support/remote-text.cpp
     src/obs-support/remote-text.hpp
     src/obs-support/shared-update.cpp
     src/obs-support/shared-update.hpp
+
     src/config.cpp
     src/config.h
     src/main-output.cpp
@@ -64,4 +73,6 @@ target_sources(
 )
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE ${CMAKE_SOURCE_DIR}/lib/ndi)
+
 set_target_properties_plugin(${CMAKE_PROJECT_NAME} PROPERTIES OUTPUT_NAME ${_name})
+

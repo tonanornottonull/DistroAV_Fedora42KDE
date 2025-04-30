@@ -65,7 +65,7 @@ void GenerateGUID(QString &guid)
 	guid.resize(40);
 
 	for (size_t i = 0; i < 40; i++) {
-		guid[i] = alphabet[rng->bounded(0, 16)];
+		guid[static_cast<int>(i)] = alphabet[rng->bounded(0, 16)];
 	}
 }
 
